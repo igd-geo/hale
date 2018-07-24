@@ -3,7 +3,7 @@
   <xs:element name="items" type="ItemsType"/>
 
   <xs:complexType name="ItemsType">
-    <xs:all minOccurs="0" maxOccurs="1">
+    <xs:all>
       <xs:element name="shirt" type="xs:string"/>
       <xs:element name="hat" type="xs:string"/>
       <xs:element name="umbrella" type="xs:string"/>

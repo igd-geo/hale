@@ -46,12 +46,12 @@ import eu.esdihumboldt.hale.common.schema.model.GroupPropertyDefinition;
 import eu.esdihumboldt.hale.common.schema.model.PropertyDefinition;
 import eu.esdihumboldt.hale.common.schema.model.Schema;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
-import eu.esdihumboldt.hale.common.schema.model.constraint.property.AllGroupFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.property.Cardinality;
 import eu.esdihumboldt.hale.common.schema.model.constraint.property.ChoiceFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.property.NillableFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.type.Binding;
 import eu.esdihumboldt.hale.common.schema.model.constraint.type.HasValueFlag;
+import eu.esdihumboldt.hale.common.schema.model.constraint.type.IgnoreOrderFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.type.MappableFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.type.MappingRelevantFlag;
 import eu.esdihumboldt.hale.common.schema.model.impl.DefaultTypeIndex;
@@ -364,8 +364,6 @@ public class XmlSchemaReaderTest {
 		assertEquals(Cardinality.UNBOUNDED, cc.getMaxOccurs());
 		// choice flag
 		assertTrue(choice.getConstraint(ChoiceFlag.class).isEnabled());
-		// "all" group flag
-		assertFalse(choice.getConstraint(AllGroupFlag.class).isEnabled());
 		// children
 		assertEquals(3, choice.getDeclaredChildren().size());
 
@@ -399,21 +397,12 @@ public class XmlSchemaReaderTest {
 		TypeDefinition itemsType = schema.getType(new QName("ItemsType"));
 		assertNotNull(itemsType);
 
-		assertEquals(1, itemsType.getChildren().size());
+		// Ignore order flag must be set b/c of <xs:all> group
+		assertTrue(itemsType.getConstraint(IgnoreOrderFlag.class).isEnabled());
 
-		// all group
-		GroupPropertyDefinition all = itemsType.getChildren().iterator().next().asGroup();
-		assertNotNull(all);
-		// cardinality
-		Cardinality cc = all.getConstraint(Cardinality.class);
-		assertEquals(0, cc.getMinOccurs());
-		assertEquals(1, cc.getMaxOccurs());
-		// choice flag (not a choice)
-		assertFalse(all.getConstraint(ChoiceFlag.class).isEnabled());
-		// "all" group flag
-		assertTrue(all.getConstraint(AllGroupFlag.class).isEnabled());
+		assertEquals(2, itemsType.getChildren().size());
 
-		Iterator<? extends ChildDefinition<?>> it = all.getDeclaredChildren().iterator();
+		Iterator<? extends ChildDefinition<?>> it = itemsType.getDeclaredChildren().iterator();
 		// name
 		PropertyDefinition name = it.next().asProperty();
 		assertNotNull(name);
@@ -446,6 +435,9 @@ public class XmlSchemaReaderTest {
 		TypeDefinition itemsType = schema.getType(new QName("ItemsType"));
 		assertNotNull(itemsType);
 
+		// Ignore order flag must not be set
+		assertFalse(itemsType.getConstraint(IgnoreOrderFlag.class).isEnabled());
+
 		assertEquals(1, itemsType.getChildren().size());
 
 		// sequence group
@@ -457,8 +449,6 @@ public class XmlSchemaReaderTest {
 		assertEquals(Cardinality.UNBOUNDED, cc.getMaxOccurs());
 		// choice flag (not a choice)
 		assertFalse(sequence.getConstraint(ChoiceFlag.class).isEnabled());
-		// "all" group flag
-		assertFalse(sequence.getConstraint(AllGroupFlag.class).isEnabled());
 
 		Iterator<? extends ChildDefinition<?>> it = sequence.getDeclaredChildren().iterator();
 		// name

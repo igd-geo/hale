@@ -86,13 +86,13 @@ import eu.esdihumboldt.hale.common.schema.model.Definition;
 import eu.esdihumboldt.hale.common.schema.model.DefinitionGroup;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 import eu.esdihumboldt.hale.common.schema.model.constraint.DisplayName;
-import eu.esdihumboldt.hale.common.schema.model.constraint.property.AllGroupFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.property.Cardinality;
 import eu.esdihumboldt.hale.common.schema.model.constraint.property.ChoiceFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.property.NillableFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.type.AbstractFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.type.Enumeration;
 import eu.esdihumboldt.hale.common.schema.model.constraint.type.HasValueFlag;
+import eu.esdihumboldt.hale.common.schema.model.constraint.type.IgnoreOrderFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.type.MappableFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.type.MappingRelevantFlag;
 import eu.esdihumboldt.hale.common.schema.model.impl.AbstractDefinition;
@@ -215,7 +215,7 @@ public class XmlSchemaReader extends AbstractSchemaReader {
 	/**
 	 * The display name constraint for choices
 	 */
-	private static final DisplayName DISPLAYNAME_CHOICE = new DisplayName("choice");
+	private static final DisplayName DISPLAYNAME_CHOICE = new DisplayName("(choice)");
 
 	/**
 	 * The log
@@ -940,7 +940,6 @@ public class XmlSchemaReader extends AbstractSchemaReader {
 				sequenceGroup.setConstraint(Cardinality.get(sequence.getMinOccurs(), max));
 				// set choice constraint (no choice)
 				sequenceGroup.setConstraint(ChoiceFlag.DISABLED);
-				sequenceGroup.setConstraint(AllGroupFlag.DISABLED);
 				// set metadata
 				setMetadata(sequenceGroup, sequence, schemaLocation);
 
@@ -970,25 +969,35 @@ public class XmlSchemaReader extends AbstractSchemaReader {
 			// <all>
 			XmlSchemaAll all = (XmlSchemaAll) particle;
 
-			// create group only if necessary (all groups that appear exactly
+			// Declaring group must be the type, <all> groups can't be
+			// children of other groups.
+			if (!(declaringGroup instanceof XmlTypeDefinition)) {
+				reporter.error(
+						"<xs:all> groups that are not immediate children of a type definition are not supported.");
+				return;
+			}
+
+			XmlTypeDefinition type = (XmlTypeDefinition) declaringGroup;
+			type.setConstraint(IgnoreOrderFlag.ENABLED);
+
+			// create group only if necessary (sequences that appear exactly
 			// once will result in no group if not forced)
 			if (forceGroup || all.getMinOccurs() != 1 || all.getMaxOccurs() != 1) {
-				// create an all group
-				QName allName = createGroupName(declaringGroup, "all");
-				DefaultGroupPropertyDefinition allGroup = new DefaultGroupPropertyDefinition(
-						allName, declaringGroup, false);
+				// create a sequence group
+				QName sequenceName = createGroupName(declaringGroup, "all");
+				DefaultGroupPropertyDefinition sequenceGroup = new DefaultGroupPropertyDefinition(
+						sequenceName, declaringGroup, false);
 				// set cardinality
 				long max = (all.getMaxOccurs() == Long.MAX_VALUE) ? (Cardinality.UNBOUNDED)
 						: (all.getMaxOccurs());
-				allGroup.setConstraint(Cardinality.get(all.getMinOccurs(), max));
+				sequenceGroup.setConstraint(Cardinality.get(all.getMinOccurs(), max));
 				// set choice constraint (no choice)
-				allGroup.setConstraint(ChoiceFlag.DISABLED);
-				allGroup.setConstraint(AllGroupFlag.ENABLED);
+				sequenceGroup.setConstraint(ChoiceFlag.DISABLED);
 				// set metadata
-				setMetadata(allGroup, all, schemaLocation);
+				setMetadata(sequenceGroup, all, schemaLocation);
 
 				// use group as parent
-				declaringGroup = allGroup;
+				declaringGroup = sequenceGroup;
 			}
 
 			for (int j = 0; j < all.getItems().getCount(); j++) {
@@ -1026,7 +1035,6 @@ public class XmlSchemaReader extends AbstractSchemaReader {
 			choiceGroup.setConstraint(Cardinality.get(choice.getMinOccurs(), max));
 			// set choice constraint
 			choiceGroup.setConstraint(ChoiceFlag.ENABLED);
-			choiceGroup.setConstraint(AllGroupFlag.DISABLED);
 			// set metadata
 			setMetadata(choiceGroup, choice, schemaLocation);
 

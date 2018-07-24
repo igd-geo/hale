@@ -39,9 +39,9 @@ import eu.esdihumboldt.hale.common.schema.model.DefinitionUtil;
 import eu.esdihumboldt.hale.common.schema.model.GroupPropertyDefinition;
 import eu.esdihumboldt.hale.common.schema.model.PropertyDefinition;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
-import eu.esdihumboldt.hale.common.schema.model.constraint.property.AllGroupFlag;
 import eu.esdihumboldt.hale.common.schema.model.constraint.property.Cardinality;
 import eu.esdihumboldt.hale.common.schema.model.constraint.property.ChoiceFlag;
+import eu.esdihumboldt.hale.common.schema.model.constraint.type.IgnoreOrderFlag;
 import eu.esdihumboldt.hale.io.xsd.constraint.XmlAttributeFlag;
 
 /**
@@ -206,9 +206,9 @@ public class GroupUtil {
 		if (strict && allowFallback) {
 			// fall-back: property in any group without validity checks
 			// XXX though allowClose will still be strict
-			log.warn(MessageFormat
-					.format("Could not find valid property path for {0}, source data might be invalid regarding the source schema.",
-							propertyName));
+			log.warn(MessageFormat.format(
+					"Could not find valid property path for {0}, source data might be invalid regarding the source schema.",
+					propertyName));
 			return determineProperty(groups, propertyName, false, false, ignoreNamespaces);
 		}
 
@@ -326,10 +326,11 @@ public class GroupUtil {
 						.getAllChildren(lastDef);
 
 				for (ChildDefinition<?> child : children) {
-					if (child.asGroup() != null
-							&& (path.getChildren() == null || !path.getChildren().contains(
-									child.asGroup()))) { // (check for
-															// definition cycle)
+					if (child.asGroup() != null && (path.getChildren() == null
+							|| !path.getChildren().contains(child.asGroup()))) { // (check
+																					// for
+																					// definition
+																					// cycle)
 						List<DefinitionGroup> childDefs = new ArrayList<DefinitionGroup>();
 						if (path.getChildren() != null) {
 							childDefs.addAll(path.getChildren());
@@ -371,15 +372,16 @@ public class GroupUtil {
 		}
 
 		if (currentGroup.getDefinition() instanceof GroupPropertyDefinition
-				&& ((GroupPropertyDefinition) currentGroup.getDefinition()).getConstraint(
-						ChoiceFlag.class).isEnabled()) {
+				&& ((GroupPropertyDefinition) currentGroup.getDefinition())
+						.getConstraint(ChoiceFlag.class).isEnabled()) {
 			// group is a choice
 			Iterator<QName> it = currentGroup.getPropertyNames().iterator();
 			if (it.hasNext()) {
 				// choice has at least on value set -> check cardinality for the
 				// corresponding property
 				QName name = it.next();
-				return isValidCardinality(currentGroup, currentGroup.getDefinition().getChild(name));
+				return isValidCardinality(currentGroup,
+						currentGroup.getDefinition().getChild(name));
 			}
 			// else check all children like below
 		}
@@ -503,9 +505,8 @@ public class GroupUtil {
 			else {
 				// sequence, group(, attributeGroup)
 
-				// check order if not <all>
-				if (!gpdef.getConstraint(AllGroupFlag.class).isEnabled()
-						&& !allowAddCheckOrder(group, propertyName, def)) {
+				// check order
+				if (!allowAddCheckOrder(group, propertyName, def)) {
 					return false;
 				}
 
@@ -517,8 +518,10 @@ public class GroupUtil {
 			// type
 			TypeDefinition typeDef = (TypeDefinition) def;
 
-			// check order
-			if (!allowAddCheckOrder(group, propertyName, typeDef)) {
+			// check order unless IgnoreOrderFlag is set (e.g. in case of an
+			// <xs:all> group)
+			if (!typeDef.getConstraint(IgnoreOrderFlag.class).isEnabled()
+					&& !allowAddCheckOrder(group, propertyName, typeDef)) {
 				return false;
 			}
 
@@ -552,12 +555,13 @@ public class GroupUtil {
 			}
 			else {
 				// ignore XML attributes
-				if (childDef.asProperty() != null
-						&& childDef.asProperty().getConstraint(XmlAttributeFlag.class).isEnabled()) {
+				if (childDef.asProperty() != null && childDef.asProperty()
+						.getConstraint(XmlAttributeFlag.class).isEnabled()) {
 					continue;
 				}
 				// ignore groups that contain no elements
-				if (childDef.asGroup() != null && !StreamGmlHelper.hasElements(childDef.asGroup())) {
+				if (childDef.asGroup() != null
+						&& !StreamGmlHelper.hasElements(childDef.asGroup())) {
 					continue;
 				}
 

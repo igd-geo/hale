@@ -37,7 +37,6 @@ import eu.esdihumboldt.hale.common.instance.model.Group;
 import eu.esdihumboldt.hale.common.instance.model.Instance;
 import eu.esdihumboldt.hale.common.instance.model.InstanceCollection;
 import eu.esdihumboldt.hale.common.instance.model.ResourceIterator;
-import eu.esdihumboldt.hale.common.instance.model.impl.DefaultGroup;
 import eu.esdihumboldt.hale.common.schema.io.SchemaReader;
 import eu.esdihumboldt.hale.common.schema.model.Schema;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
@@ -293,23 +292,17 @@ public class GmlInstanceCollectionTest {
 			Instance instance = it.next();
 			assertNotNull(instance);
 
-			// all
-			Object[] all_1 = instance.getProperty(new QName("/ItemsType", "all_1"));
-			assertNotNull(all_1);
-			assertEquals(1, all_1.length);
-			DefaultGroup all = (DefaultGroup) all_1[0];
-
-			Object[] umbrella = all.getProperty(new QName("umbrella"));
+			Object[] umbrella = instance.getProperty(new QName("umbrella"));
 			assertNotNull(umbrella);
 			assertEquals(1, umbrella.length);
 			assertEquals("Some umbrella", umbrella[0]);
 
-			Object[] shirt = all.getProperty(new QName("shirt"));
+			Object[] shirt = instance.getProperty(new QName("shirt"));
 			assertNotNull(shirt);
 			assertEquals(1, shirt.length);
 			assertEquals("Some shirt", shirt[0]);
 
-			Object[] hat = all.getProperty(new QName("hat"));
+			Object[] hat = instance.getProperty(new QName("hat"));
 			assertNotNull(hat);
 			assertEquals(1, hat.length);
 			assertEquals("And hat", hat[0]);
